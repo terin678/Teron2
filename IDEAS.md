@@ -173,9 +173,14 @@ independent badges — *time verified* (replay) and *identity verified* (WCL log
 
 ---
 
-## 4. Hosting / scaling — evaluated 2026-08-26, decision: stay on Fly
+## 4. Hosting / scaling — migrated to GitHub Pages 2026-08-26
 
-**Status:** decided for now. Revisit only if traffic actually spikes.
+**Status:** DONE. Live at https://terin678.github.io/Teron2/, deployed by CI from
+`terin678/Teron2`. Fly (`teron2.fly.dev`) is still up and is the rollback.
+
+**Still open:** decide the Fly app's fate — keep it stopped as the future leaderboard backend
+(section 1 needs a real server either way), or destroy it. Keep it until Pages has had some real
+traffic.
 
 **What the original does:** `teron.faldorn.net` is **GitHub Pages** (`Server: GitHub.com`, CNAME to
 `jconnop.github.io`) fronted by **Fastly** (`Via: 1.1 varnish`, `X-Cache: HIT`). Cloudflare handles
@@ -206,10 +211,26 @@ cached clients to pick it up), everything else 5 minutes.
 **Per-visitor payload:** ~4.2 MB for 2D, ~5.1 MB for 3D on a cold cache. Bandwidth, not CPU, is the
 thing that would actually cost money at scale.
 
-### Planned migration: GitHub Pages
+### The migration, as executed
 
-**Status:** planned, not executed. Parked behind incoming playtest feedback — bug fixes keep
-(rightly) taking priority, so this is written up ready to run in one sitting.
+**Status:** completed 2026-08-26. Notes below kept for the record.
+
+**Two things worth remembering if this is ever redone:**
+
+1. **Private repos meter GitHub Actions minutes; public repos get them free and unlimited.** The
+   first attempt used a private repo and CI failed instantly with *"The job was not started because
+   recent account payments have failed or your spending limit needs to be increased."* Going public
+   unblocked it with no billing change. A paid plan alone is not enough — Actions still bills
+   against private-repo minutes.
+2. **Pages from a private repo publishes a PUBLIC site anyway** (the API literally returns
+   `"public": true`). Private repo only hides the source; only Enterprise Cloud gates the site
+   itself. So "keep it private" never protected the assets from being served — only from being
+   browsable as a repo.
+
+**Precedent confirmed, not assumed:** `jconnop/teron` is a public, MIT-licensed repo containing all
+the same Blizzard assets — 12 PNG, 6 JPG, 22 MP3, 21 OGG, byte-identical to ours (`background.png`
+= 685,024 bytes, `blackTempleMusic.mp3` = 1,503,197 bytes). A LICENSE reproducing Jesse Connop's
+MIT notice was added, since our mechanics and tuning are ported from that source.
 
 **Why Pages:** free, global Fastly CDN, no machines or scaling knobs, and it's exactly what the
 original does. Removes the scaling question entirely rather than tuning it.

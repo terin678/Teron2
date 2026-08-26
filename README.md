@@ -6,7 +6,10 @@ destroy 4 Deadly Constructs before any of them reaches Teron.
 
 Built with Phaser 3 (2D) and Three.js (3D mode), no build step — plain ES modules.
 
-**Live at https://teron2.fly.dev** (2D) and **https://teron2.fly.dev/3d.html** (3D).
+**Play it: [2D](https://terin678.github.io/Teron2/) · [3D](https://terin678.github.io/Teron2/3d.html)**
+
+Hosted on GitHub Pages, deployed by CI on every push to `main` (tests must pass first).
+A mirror also runs on Fly at [teron2.fly.dev](https://teron2.fly.dev).
 
 ## Run it
 
