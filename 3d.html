@@ -99,7 +99,10 @@
 			width: min(500px, calc(100vw - 48px));
 		}
 		.overlay h1 { margin: 0 0 12px; font-size: 30px; color: #f6d21f; }
-		.overlay h1.red { color: #ff5555; }
+		.overlay h1.red { color: #fb3333; }
+		.overlay h1.win { color: #6b74ff; }
+		.overlay .timeline { font-weight: bold; font-size: 15px; }
+		.overlay .cheat { display: none; color: #ad0d0d; font-weight: bold; font-size: 22px; }
 		.overlay p { margin: 6px 0; font-size: 15px; line-height: 1.45; }
 		.overlay .sub { color: #aaa; font-size: 13px; }
 		.overlay .record { color: #3ef06c; font-weight: bold; font-size: 19px; }
@@ -163,12 +166,14 @@
 
 		<div id="end-overlay" class="overlay panel">
 			<div class="box">
-				<h1 id="end-title">Teron Gorefiend dies!</h1>
-				<p id="end-time"></p>
+				<h1 id="end-title">All constructs defeated!</h1>
+				<p id="end-flavour"></p>
+				<p id="end-time" class="timeline"></p>
+				<p id="end-cheat" class="cheat">BUT YOU CHEATED!</p>
 				<p id="end-best" class="sub"></p>
 				<p id="end-record" class="record">NEW RECORD!</p>
 				<div>
-					<button class="btn" id="btn-retry">Restart</button>
+					<button class="btn" id="btn-retry">Play Again</button>
 					<button class="btn gray" id="btn-menu3d">3D Menu</button>
 				</div>
 				<p><a class="plain" href="index.html">&larr; Back to 2D</a></p>

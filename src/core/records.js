@@ -38,3 +38,21 @@ export function addRecord(difficulty, seconds) {
 export function formatTime(seconds) {
 	return seconds.toFixed(2) + 's';
 }
+
+// WoW parse-style colour grading for a win time, matching the original game's
+// scale exactly. Its source notes "Theoretically perfect = 27 seconds ... I
+// think?", which lines up with the ~28s mechanical floor (4 x 65,000 HP against
+// 2 Volleys + 2 Chains of AoE plus 24 Lance GCDs).
+const PARSE_TIERS = [
+	{ maxSeconds: 28, color: '#e5cc5e', label: 'gold' },
+	{ maxSeconds: 29, color: '#e26882', label: 'pink' },
+	{ maxSeconds: 30, color: '#ff8000', label: 'orange' },
+	{ maxSeconds: 32, color: '#a335ee', label: 'purple' },
+	{ maxSeconds: 35, color: '#0070ff', label: 'blue' },
+	{ maxSeconds: 40, color: '#1eff00', label: 'green' },
+];
+const PARSE_GREY = { maxSeconds: Infinity, color: '#666666', label: 'grey' };
+
+export function parseTier(seconds) {
+	return PARSE_TIERS.find(t => seconds <= t.maxSeconds) ?? PARSE_GREY;
+}

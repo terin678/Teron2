@@ -1,4 +1,4 @@
-import { formatTime } from '../../core/records.js';
+import { formatTime, parseTier } from '../../core/records.js';
 
 function makeButton(scene, container, x, y, label, scale, onClick) {
 	const image = scene.add.image(x, y, 'buttons', 2).setScale(scale);
@@ -19,52 +19,80 @@ export class WinOverlay extends Phaser.GameObjects.Container {
 		super(scene, x, y);
 		this.visible = false;
 
-		const backdrop = scene.add.rectangle(0, 60, 520, 400, 0x000000, 0.8);
+		const backdrop = scene.add.rectangle(0, 70, 540, 440, 0x000000, 0.8);
 		backdrop.setStrokeStyle(2, 0xc9a227);
 		this.add(backdrop);
 
-		this.title = scene.add.text(0, -80, 'Teron Gorefiend dies!', {
-			align: 'center', color: '#f6d21f', fontSize: '34px', fontStyle: 'bold',
-			stroke: '#000000', strokeThickness: 4, wordWrap: { width: 480 },
+		// Wording from the original: you defend Teron from the constructs, you
+		// don't kill him.
+		this.title = scene.add.text(0, -110, 'All constructs defeated!', {
+			align: 'center', color: '#6b74ff', fontSize: '30px', fontStyle: 'bold',
+			stroke: '#000000', strokeThickness: 5, wordWrap: { width: 500 },
 		}).setOrigin(0.5, 0.5);
 		this.add(this.title);
 
-		this.timeText = scene.add.text(0, -20, '', {
-			align: 'center', fontSize: '24px', wordWrap: { width: 480 },
+		this.flavour = scene.add.text(0, -58, 'Your raid members cheer at you!\nYou saved their day!', {
+			align: 'center', color: '#dfe2ff', fontSize: '20px', fontStyle: 'bold',
+			stroke: '#000000', strokeThickness: 4, wordWrap: { width: 500 },
+		}).setOrigin(0.5, 0.5);
+		this.flavour.setLineSpacing(4);
+		this.add(this.flavour);
+
+		// Colour-graded by time, WoW parse style, exactly as the original does.
+		this.timeText = scene.add.text(0, 10, '', {
+			align: 'center', fontSize: '17px', fontStyle: 'bold',
+			stroke: '#000000', strokeThickness: 5, wordWrap: { width: 500 },
 		}).setOrigin(0.5, 0.5);
 		this.add(this.timeText);
 
-		this.bestText = scene.add.text(0, 20, '', {
-			align: 'center', color: '#bbbbbb', fontSize: '18px', wordWrap: { width: 480 },
+		this.cheatText = scene.add.text(0, 42, 'BUT YOU CHEATED!', {
+			align: 'center', color: '#ad0d0d', fontSize: '26px', fontStyle: 'bold',
+			stroke: '#000000', strokeThickness: 5,
+		}).setOrigin(0.5, 0.5);
+		this.add(this.cheatText);
+
+		this.bestText = scene.add.text(0, 45, '', {
+			align: 'center', color: '#bbbbbb', fontSize: '16px', wordWrap: { width: 500 },
 		}).setOrigin(0.5, 0.5);
 		this.add(this.bestText);
 
-		this.recordText = scene.add.text(0, 60, 'NEW RECORD!', {
-			align: 'center', color: '#3ef06c', fontSize: '28px', fontStyle: 'bold',
+		this.recordText = scene.add.text(0, 75, 'NEW RECORD!', {
+			align: 'center', color: '#3ef06c', fontSize: '24px', fontStyle: 'bold',
+			stroke: '#000000', strokeThickness: 4,
 		}).setOrigin(0.5, 0.5);
 		this.add(this.recordText);
 
-		makeButton(scene, this, 0, 130, 'RESTART', 0.22, () => scene.restartGame());
-		makeButton(scene, this, 0, 200, 'MENU', 0.16, () => scene.returnToMenu());
+		makeButton(scene, this, 0, 140, 'PLAY AGAIN', 0.24, () => scene.restartGame());
+		makeButton(scene, this, 0, 208, 'MENU', 0.16, () => scene.returnToMenu());
 
-		this.hint = scene.add.text(0, 250, 'Press R to restart', {
+		this.hint = scene.add.text(0, 256, 'Press R to play again', {
 			align: 'center', color: '#999999', fontSize: '16px',
 		}).setOrigin(0.5, 0.5);
 		this.add(this.hint);
 	}
 
 	show(seconds, { best, isRecord, cheated, noRecords }) {
-		this.timeText.setText('Constructs destroyed in ' + formatTime(seconds));
 		if (cheated) {
-			this.bestText.setText('(cheats enabled — time not recorded)');
-			this.recordText.visible = false;
-		} else if (noRecords) {
-			this.bestText.setText('Tutorial complete! Try Practice or Normal next.');
+			// The original greys a cheated time out and calls it what it is.
+			this.timeText.setText('You "won" in ' + formatTime(seconds) + '...');
+			this.timeText.setColor('#666666');
+			this.cheatText.visible = true;
+			this.bestText.visible = false;
 			this.recordText.visible = false;
 		} else {
-			this.bestText.setText('Personal best: ' + formatTime(best));
-			this.recordText.visible = isRecord;
+			this.timeText.setText('You won in ' + formatTime(seconds) + '! Can you beat your friends?');
+			this.timeText.setColor(parseTier(seconds).color);
+			this.cheatText.visible = false;
+			this.bestText.visible = true;
+			if (noRecords) {
+				this.bestText.setText('Tutorial complete! Try Practice or Normal next.');
+				this.recordText.visible = false;
+			} else {
+				this.bestText.setText('Personal best: ' + formatTime(best));
+				this.recordText.visible = isRecord;
+			}
 		}
+
 		this.visible = true;
 		this.alpha = 0;
 		this.scene.tweens.add({ targets: this, alpha: 1, duration: 800, ease: 'Power2' });
@@ -77,23 +105,28 @@ export class LoseOverlay extends Phaser.GameObjects.Container {
 		super(scene, x, y);
 		this.visible = false;
 
-		const backdrop = scene.add.rectangle(0, 30, 520, 340, 0x000000, 0.8);
+		const backdrop = scene.add.rectangle(0, 40, 540, 400, 0x000000, 0.8);
 		backdrop.setStrokeStyle(2, 0x8a1010);
 		this.add(backdrop);
 
-		this.add(scene.add.text(0, -70, 'A construct reached Teron!', {
-			align: 'center', color: '#ff5555', fontSize: '26px', fontStyle: 'bold',
+		this.add(scene.add.text(0, -110, 'Your raid leader audibly sighs...', {
+			align: 'center', color: '#fb3333', fontSize: '25px', fontStyle: 'bold',
+			stroke: '#000000', strokeThickness: 5, wordWrap: { width: 500 },
+		}).setOrigin(0.5, 0.5));
+
+		const body = scene.add.text(0, -30,
+			"Ok wipe it up. This isn't hard just.. ugh. Didn't you all practice this? " +
+			"Run back asap and let's hope you-know-who doesn't get Shadow of Death this time..", {
+			align: 'center', color: '#fb8b8b', fontSize: '17px', fontStyle: 'bold',
 			stroke: '#000000', strokeThickness: 4, wordWrap: { width: 480 },
-		}).setOrigin(0.5, 0.5));
+		}).setOrigin(0.5, 0.5);
+		body.setLineSpacing(4);
+		this.add(body);
 
-		this.add(scene.add.text(0, -20, 'Your raid wipes... again.', {
-			align: 'center', fontSize: '20px', wordWrap: { width: 480 },
-		}).setOrigin(0.5, 0.5));
+		makeButton(scene, this, 0, 100, 'TRY AGAIN', 0.24, () => scene.restartGame());
+		makeButton(scene, this, 0, 168, 'MENU', 0.16, () => scene.returnToMenu());
 
-		makeButton(scene, this, 0, 60, 'RETRY', 0.22, () => scene.restartGame());
-		makeButton(scene, this, 0, 130, 'MENU', 0.16, () => scene.returnToMenu());
-
-		this.add(scene.add.text(0, 180, 'Press R to retry', {
+		this.add(scene.add.text(0, 214, 'Press R to try again', {
 			align: 'center', color: '#999999', fontSize: '16px',
 		}).setOrigin(0.5, 0.5));
 	}

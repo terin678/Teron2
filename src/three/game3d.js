@@ -9,7 +9,7 @@ import {
 } from '../core/constants.js';
 import { loadSettings, saveSettings, eventSig, bareCode, findAction, bindLabel } from '../core/settings.js';
 import { TabCycler, nearest } from '../core/targeting.js';
-import { loadRecords, addRecord, formatTime } from '../core/records.js';
+import { loadRecords, addRecord, formatTime, parseTier } from '../core/records.js';
 import { recommendSlot } from '../core/coach.js';
 
 const $ = id => document.getElementById(id);
@@ -802,14 +802,24 @@ class Game3D {
 		this.hideObjective();
 		this.setTarget(null);
 
-		$('end-title').textContent = 'Teron Gorefiend dies!';
-		$('end-title').className = '';
-		$('end-time').textContent = 'Constructs destroyed in ' + formatTime(seconds);
+		// You defend Teron from the constructs; you don't kill him.
+		$('end-title').textContent = 'All constructs defeated!';
+		$('end-title').className = 'win';
+		$('end-flavour').textContent = 'Your raid members cheer at you! You saved their day!';
+		$('end-flavour').style.display = 'block';
+
+		const time = $('end-time');
 		const cheated = this.cheatNoLose || this.cheatNoCooldowns;
 		if (cheated) {
-			$('end-best').textContent = '(cheats enabled — time not recorded)';
+			time.textContent = 'You "won" in ' + formatTime(seconds) + '...';
+			time.style.color = '#666666';
+			$('end-cheat').style.display = 'block';
+			$('end-best').textContent = '';
 			$('end-record').style.display = 'none';
 		} else {
+			time.textContent = 'You won in ' + formatTime(seconds) + '! Can you beat your friends?';
+			time.style.color = parseTier(seconds).color;
+			$('end-cheat').style.display = 'none';
 			const { best, isRecord } = addRecord(this.recordMode, seconds);
 			$('end-best').textContent = 'Personal best: ' + formatTime(best);
 			$('end-record').style.display = isRecord ? 'block' : 'none';
@@ -823,9 +833,13 @@ class Game3D {
 		this.hideObjective();
 		this.setTarget(null);
 
-		$('end-title').textContent = 'A construct reached Teron!';
+		$('end-title').textContent = 'Your raid leader audibly sighs...';
 		$('end-title').className = 'red';
-		$('end-time').textContent = 'Your raid wipes... again.';
+		$('end-flavour').textContent = "Ok wipe it up. This isn't hard just.. ugh. Didn't you all " +
+			"practice this? Run back asap and let's hope you-know-who doesn't get Shadow of Death this time..";
+		$('end-flavour').style.display = 'block';
+		$('end-time').textContent = '';
+		$('end-cheat').style.display = 'none';
 		$('end-best').textContent = '';
 		$('end-record').style.display = 'none';
 		$('end-overlay').style.display = 'flex';
