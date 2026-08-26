@@ -2,6 +2,7 @@ import { ABILITIES } from '../../core/constants.js';
 import { bindLabel } from '../../core/settings.js';
 import { loadRecords, formatTime } from '../../core/records.js';
 import { SoundToggle } from '../prefabs/SoundToggle.js';
+import { fs, isMobile } from '../ui.js';
 
 const INTRO_TEXT =
 	"It's just another day in Black Temple... your raid is fighting Teron Gorefiend " +
@@ -15,6 +16,16 @@ const INTRO_TEXT =
 	"wipes. Kill all four first!\n\n" +
 	"Every key is rebindable in Options, mouseover casting is on by default, and Esc pauses. " +
 	"New here? The Tutorial walks you through each ability step by step.\n\nGood luck!";
+
+// On a phone the story text is set much larger to stay legible, so it has to be
+// far shorter to fit the same canvas.
+const MOBILE_INTRO_TEXT =
+	"You have the Shadow of Death debuff.\n\n" +
+	"Run to a back corner before the timer ends. You die there, and four " +
+	"constructs spawn on your corpse and crawl back toward Teron.\n\n" +
+	"Kill all four before any reaches him.\n\n" +
+	"Tap a construct to target it, then tap your abilities.\n\n" +
+	"New here? Start with the Tutorial.";
 
 function menuButton(scene, x, y, label, scale, fontSize, onClick) {
 	const image = scene.add.image(x, y, 'buttons', 2).setScale(scale);
@@ -43,29 +54,33 @@ export class Menu extends Phaser.Scene {
 			align: 'center', fixedWidth: 600, fontSize: '48px', strokeThickness: 2,
 		});
 
+		const mobile = isMobile(this);
+
 		this.bestText = this.add.text(300, 168, '', {
-			align: 'center', color: '#c9c9c9', fontSize: '15px',
+			align: 'center', color: '#c9c9c9', fontSize: fs(this, 15),
 		}).setOrigin(0.5, 0.5);
 		this.refreshBestTimes();
 
-		this.introText = this.add.text(0, 205, INTRO_TEXT, {
-			align: 'center', fixedWidth: 600, fontSize: '15.5px', stroke: '#000000',
+		this.introText = this.add.text(0, mobile ? 200 : 205, mobile ? MOBILE_INTRO_TEXT : INTRO_TEXT, {
+			align: 'center', fixedWidth: 600, fontSize: fs(this, 15.5), stroke: '#000000',
 		});
-		this.introText.setLineSpacing(3);
+		this.introText.setLineSpacing(mobile ? 6 : 3);
 		this.introText.setWordWrapWidth(550);
 
 		this.spellbookPanel = this.buildSpellbookPanel();
 		this.spellbookPanel.visible = false;
 
-		// Buttons
-		menuButton(this, 476, 655, 'START', 0.25, '42px', () => this.startGame('normal'));
-		menuButton(this, 476, 725, 'PRACTICE', 0.17, '22px', () => this.startGame('practice'));
-		menuButton(this, 293, 655, 'TUTORIAL', 0.17, '22px', () => this.startGame('tutorial'));
-		menuButton(this, 293, 715, '3D MODE', 0.17, '22px', () => { window.location.href = '3d.html'; });
-		menuButton(this, 110, 655, 'OPTIONS', 0.17, '22px', () => {
+		// Buttons — bigger hit areas and labels on touch.
+		const bScale = mobile ? 0.21 : 0.17;
+		const bFont = fs(this, 22);
+		menuButton(this, 476, 655, 'START', mobile ? 0.28 : 0.25, fs(this, 42), () => this.startGame('normal'));
+		menuButton(this, 476, 725, 'PRACTICE', bScale, bFont, () => this.startGame('practice'));
+		menuButton(this, 293, 655, 'TUTORIAL', bScale, bFont, () => this.startGame('tutorial'));
+		menuButton(this, 293, 715, '3D MODE', bScale, bFont, () => { window.location.href = '3d.html'; });
+		menuButton(this, 110, 655, 'OPTIONS', bScale, bFont, () => {
 			this.scene.launch('Options', { from: 'Menu' });
 		});
-		const spellbook = menuButton(this, 110, 715, 'SPELLBOOK', 0.17, '20px', () => {
+		const spellbook = menuButton(this, 110, 715, 'SPELLBOOK', bScale, fs(this, 20), () => {
 			this.introText.visible = !this.introText.visible;
 			this.bestText.visible = this.introText.visible;
 			this.spellbookPanel.visible = !this.spellbookPanel.visible;
@@ -73,13 +88,19 @@ export class Menu extends Phaser.Scene {
 
 		this.add.existing(new SoundToggle(this, 544, 34));
 
-		// Credits
-		this.add.text(0, 756, 'Based on terongame by Faldorn — teron.faldorn.net | Valhalla, Arugal-US', {
-			align: 'center', fixedWidth: 600, fontSize: '14px',
-		});
-		this.add.text(0, 776, '*** Used graphics and sounds are property of Blizzard Entertainment ***', {
-			align: 'center', fixedWidth: 600, fontSize: '13px',
-		});
+		// Credits — condensed on mobile, where they are set larger to stay legible.
+		if (mobile) {
+			this.add.text(0, 748, 'Based on terongame by Faldorn\nAssets © Blizzard Entertainment', {
+				align: 'center', fixedWidth: 600, fontSize: fs(this, 12),
+			}).setLineSpacing(2);
+		} else {
+			this.add.text(0, 756, 'Based on terongame by Faldorn — teron.faldorn.net | Valhalla, Arugal-US', {
+				align: 'center', fixedWidth: 600, fontSize: '14px',
+			});
+			this.add.text(0, 776, '*** Used graphics and sounds are property of Blizzard Entertainment ***', {
+				align: 'center', fixedWidth: 600, fontSize: '13px',
+			});
+		}
 
 		const coffeeFaldorn = this.add.image(70, 22, 'coffee').setInteractive({ useHandCursor: true });
 		coffeeFaldorn.on('pointerdown', () => window.open('https://www.buymeacoffee.com/faldorn', '_blank'));
@@ -103,7 +124,10 @@ export class Menu extends Phaser.Scene {
 	refreshBestTimes() {
 		const records = loadRecords();
 		const line = mode => records[mode].length ? formatTime(records[mode][0]) : '—';
-		this.bestText.setText('Best times    Normal: ' + line('normal') + '    Practice: ' + line('practice'));
+		// The single-line form overruns the canvas at mobile text sizes.
+		this.bestText.setText(isMobile(this)
+			? 'Best  —  Normal ' + line('normal') + '   Practice ' + line('practice')
+			: 'Best times    Normal: ' + line('normal') + '    Practice: ' + line('practice'));
 	}
 
 	buildSpellbookPanel() {

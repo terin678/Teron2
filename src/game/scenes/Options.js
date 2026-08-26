@@ -1,6 +1,7 @@
-import {
+﻿import {
 	ACTION_DEFS, DEFAULT_SETTINGS, saveSettings, eventSig, bindLabel, assignBind, bareCode,
 } from '../../core/settings.js';
+import { fs, textScale } from '../ui.js';
 
 const ROW_H = 34;
 const SLOT_W = 110;
@@ -22,17 +23,24 @@ export class Options extends Phaser.Scene {
 		const blocker = this.add.rectangle(300, 400, 600, 800, 0x000000, 0.88);
 		blocker.setInteractive();
 
-		this.add.text(300, 46, 'Options', { fontSize: '36px', fontStyle: 'bold' }).setOrigin(0.5, 0.5);
+		this.add.text(300, 46, 'Options', { fontSize: fs(this, 36), fontStyle: 'bold' }).setOrigin(0.5, 0.5);
 
-		// Toggles
+		// Toggles. Labels are set larger on phones, so the explanatory halves are
+		// dropped there rather than running off the 600px canvas.
+		const small = textScale(this) > 1;
 		this.toggleStates = {};
-		this.makeToggle(90, 'mouseoverCast', 'Mouseover casting (cursor overrides your target)');
-		this.makeToggle(122, 'autoTargetNearest', 'Auto-target nearest when casting with no target');
-		this.makeToggle(154, 'abilityCoach', 'Ability coach (glow on the next recommended ability)');
+		this.makeToggle(90, 'mouseoverCast',
+			small ? 'Mouseover casting' : 'Mouseover casting (cursor overrides your target)');
+		this.makeToggle(122, 'autoTargetNearest',
+			small ? 'Auto-target nearest' : 'Auto-target nearest when casting with no target');
+		this.makeToggle(154, 'abilityCoach',
+			small ? 'Ability coach' : 'Ability coach (glow on the next recommended ability)');
 
 		// Keybind grid
-		this.add.text(60, 184, 'Keybinds — click a slot, then press a key (or mouse button 4/5).\nRight-click a slot to clear it.', {
-			color: '#9fd3ff', fontSize: '13px',
+		this.add.text(60, 184, small
+			? 'Keybinds (rebinding needs a keyboard)'
+			: 'Keybinds — click a slot, then press a key (or mouse button 4/5).\nRight-click a slot to clear it.', {
+			color: '#9fd3ff', fontSize: fs(this, 13),
 		});
 		let y = 222;
 		let lastGroup = null;
@@ -44,7 +52,7 @@ export class Options extends Phaser.Scene {
 		}
 
 		this.notice = this.add.text(300, y + 12, '', {
-			color: '#f6d21f', fontSize: '15px',
+			color: '#f6d21f', fontSize: fs(this, 15),
 		}).setOrigin(0.5, 0);
 
 		// Buttons
@@ -67,20 +75,20 @@ export class Options extends Phaser.Scene {
 			saveSettings(this.settings);
 		};
 		box.on('pointerdown', toggle);
-		const text = this.add.text(92, y - 9, label, { fontSize: '15px' });
+		const text = this.add.text(92, y - 9, label, { fontSize: fs(this, 15) });
 		text.setInteractive({ useHandCursor: true });
 		text.on('pointerdown', toggle);
 	}
 
 	makeBindRow(y, def) {
-		this.add.text(60, y, def.label, { fontSize: '16px' });
+		this.add.text(60, y, def.label, { fontSize: fs(this, 16) });
 		this.slotTexts[def.id] = [];
 		for (let slot = 0; slot < 2; slot++) {
 			const x = 300 + slot * (SLOT_W + 14);
 			const rect = this.add.rectangle(x, y + 9, SLOT_W, 26, 0x1c2c3c).setStrokeStyle(1, 0x557799);
 			rect.setInteractive({ useHandCursor: true });
 			const text = this.add.text(x, y + 9, bindLabel(this.settings.binds[def.id][slot]), {
-				fontSize: '15px',
+				fontSize: fs(this, 15),
 			}).setOrigin(0.5, 0.5);
 			this.slotTexts[def.id].push({ text, rect });
 			rect.on('pointerdown', pointer => {
@@ -97,7 +105,7 @@ export class Options extends Phaser.Scene {
 
 	makeTextButton(x, y, label, onClick) {
 		const text = this.add.text(x, y, label, {
-			backgroundColor: '#1c2c3c', fontSize: '18px', padding: { x: 14, y: 8 },
+			backgroundColor: '#1c2c3c', fontSize: fs(this, 18), padding: { x: 14, y: 8 },
 		}).setOrigin(0.5, 0.5);
 		text.setInteractive({ useHandCursor: true });
 		text.on('pointerover', () => text.setTint(0xf6e91f));

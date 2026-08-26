@@ -6,6 +6,7 @@ import { addRecord } from '../../core/records.js';
 import { TabCycler, nearest } from '../../core/targeting.js';
 import { recommendSlot } from '../../core/coach.js';
 import { TUTORIAL_STEPS } from '../../core/tutorial.js';
+import { fs } from '../ui.js';
 import { Player } from '../prefabs/Player.js';
 import { Ghost } from '../prefabs/Ghost.js';
 import { Debuff } from '../prefabs/Debuff.js';
@@ -180,7 +181,7 @@ export class TeronGame extends Phaser.Scene {
 		});
 
 		this.objectiveText = this.add.text(300, 335, 'Protect Teron!\nKill all 4 constructs before any reaches him.', {
-			align: 'center', color: '#ffd21f', fontSize: '19px', fontStyle: 'bold',
+			align: 'center', color: '#ffd21f', fontSize: fs(this, 19), fontStyle: 'bold',
 			stroke: '#000000', strokeThickness: 4, wordWrap: { width: 570 },
 		}).setOrigin(0.5, 0.5);
 	}
@@ -374,7 +375,7 @@ export class TeronGame extends Phaser.Scene {
 
 	initHints() {
 		this.hintText = this.add.text(300, 560, '', {
-			align: 'center', color: '#9fd3ff', fontSize: '18px', fontStyle: 'bold',
+			align: 'center', color: '#9fd3ff', fontSize: fs(this, 18), fontStyle: 'bold',
 			stroke: '#000000', strokeThickness: 4, wordWrap: { width: 560 },
 		}).setOrigin(0.5, 0.5).setDepth(5);
 
@@ -414,7 +415,7 @@ export class TeronGame extends Phaser.Scene {
 
 		this.tutorialText = this.add.text(300, 500, '', {
 			align: 'center', backgroundColor: '#000000cc', color: '#ffd21f',
-			fontSize: '20px', fontStyle: 'bold', padding: { x: 16, y: 12 },
+			fontSize: fs(this, 20), fontStyle: 'bold', padding: { x: 16, y: 12 },
 			wordWrap: { width: 480 },
 		}).setOrigin(0.5, 0.5).setDepth(6);
 
@@ -688,12 +689,22 @@ export class TeronGame extends Phaser.Scene {
 		this.abilityBar.setScale(1.4);
 		this.abilityBar.x = 74;
 		this.abilityBar.y = 727;
+		// The cast-name label sits far to the left of the bar, which lands well
+		// off-canvas once the bar is moved and scaled up for touch. Tuck it above.
+		this.abilityBar.abilityName.setPosition(-40, -62);
 
 		const ghostScaleFactor = 2;
 		this.ghosts.forEach(g => g.setScale(g.scaleX * ghostScaleFactor));
 		this.freezeIndicators.forEach(d => d.setScale(ghostScaleFactor));
 		this.targetHighlight.setScale(ghostScaleFactor);
 		this.hoverHighlight.setScale(ghostScaleFactor);
+
+		// The target frame is art + text together, so scale the whole widget
+		// rather than the labels alone (its name label rendered under 7px on a
+		// phone). Repositioned to keep the scaled-up frame on canvas.
+		this.targetFrame.setScale(1.8);
+		this.targetFrame.x = 12;
+		this.targetFrame.y = 96;
 		this.ghostSpawnOffset = GHOST.spawnOffset * 1.6;
 
 		this.physics.add.collider(this.ghosts, this.ghosts);
