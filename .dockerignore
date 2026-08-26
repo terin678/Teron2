@@ -1,0 +1,10 @@
+.claude/
+tools/
+README.md
+IDEAS.md
+tests/
+package.json
+node_modules/
+Dockerfile
+fly.toml
+.git/

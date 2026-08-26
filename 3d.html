@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Teron 3D</title>
+	<style>
+		html, body { margin: 0; padding: 0; background: #16130e; height: 100%; overflow: hidden; }
+		body { font-family: 'Courier New', monospace; color: #eee; user-select: none; }
+		#app { position: fixed; inset: 0; }
+		#app canvas { display: block; }
+
+		#hud { position: fixed; inset: 0; pointer-events: none; }
+		.panel { pointer-events: auto; }
+
+		#debuff { position: absolute; top: 14px; right: 64px; text-align: center; display: none; }
+		#debuff img { width: 44px; height: 44px; border: 1px solid #63308a; border-radius: 4px; }
+		#debuff .timer { font-size: 22px; font-weight: bold; text-shadow: 0 0 4px #000; }
+
+		#objective {
+			position: absolute; top: 72px; left: 0; right: 0; text-align: center;
+			color: #ffd21f; font-weight: bold; font-size: 17px; text-shadow: 1px 1px 2px #000;
+			transition: opacity 1s; white-space: pre-line;
+		}
+
+		#target-frame {
+			position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+			width: 240px; background: rgba(0,0,0,0.65); border: 1px solid #666;
+			border-radius: 4px; padding: 6px 8px; display: none;
+		}
+		#tf-name { font-size: 14px; margin-bottom: 4px; }
+		#tf-hpbar { height: 16px; background: #5a2020; border-radius: 2px; overflow: hidden; }
+		#tf-hpfill { height: 100%; width: 100%; background: #008a00; }
+		#tf-pct { font-size: 12px; color: #ccc; margin-top: 2px; }
+		#tf-debuffs { margin-top: 4px; display: flex; gap: 8px; }
+		#tf-debuffs .chip { display: none; align-items: center; gap: 3px; font-size: 13px; font-weight: bold; }
+		#tf-debuffs img { width: 20px; height: 20px; border-radius: 3px; }
+
+		#ability-bar {
+			position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+			display: flex; gap: 8px;
+		}
+		.slot { position: relative; width: 52px; height: 52px; cursor: pointer; }
+		.slot img { width: 100%; height: 100%; border: 2px solid #444; border-radius: 5px; box-sizing: border-box; }
+		.slot.cooling img { filter: brightness(0.35); }
+		.slot.pressed img { border-color: #ffd21f; }
+		.slot .bind {
+			position: absolute; top: -2px; left: 2px; font-size: 14px; font-weight: bold;
+			color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000;
+		}
+		.slot .cd {
+			position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+			font-size: 24px; font-weight: bold; color: #ff4040; text-shadow: 0 0 4px #000;
+		}
+		.slot.gap { margin-left: 18px; }
+		#ability-bar.disabled { opacity: 0.35; filter: grayscale(0.8); pointer-events: none; }
+		.slot.coach img {
+			border-color: #ffd21f;
+			animation: coachPulse 0.7s ease-in-out infinite alternate;
+		}
+		.slot.coach::after {
+			content: '▼';
+			position: absolute; top: -30px; left: 50%;
+			color: #ffd21f; font-size: 24px; font-weight: bold;
+			text-shadow: 0 0 4px #000, 0 0 4px #000;
+			animation: coachBounce 0.7s ease-in-out infinite alternate;
+		}
+		@keyframes coachPulse {
+			from { box-shadow: 0 0 8px 3px rgba(255, 210, 31, 0.65); transform: scale(1); }
+			to { box-shadow: 0 0 26px 10px rgba(255, 210, 31, 1); transform: scale(1.12); }
+		}
+		@keyframes coachBounce {
+			from { transform: translate(-50%, 0); }
+			to { transform: translate(-50%, 9px); }
+		}
+
+		#announce {
+			position: absolute; bottom: 84px; left: 50%; transform: translateX(-50%);
+			font-size: 18px; font-weight: bold; text-shadow: 1px 1px 2px #000;
+		}
+		#error {
+			position: absolute; bottom: 112px; left: 50%; transform: translateX(-50%);
+			font-size: 20px; font-weight: bold; color: #ff5555; text-shadow: 1px 1px 2px #000;
+			opacity: 0; transition: opacity 0.4s;
+		}
+
+		#sound-toggle {
+			position: absolute; top: 14px; right: 14px; width: 36px; height: 36px;
+			cursor: pointer; font-size: 24px; text-align: center; line-height: 36px;
+		}
+
+		.overlay {
+			position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+			background: rgba(0,0,0,0.6);
+		}
+		.overlay .box {
+			background: rgba(10,8,6,0.92); border: 2px solid #c9a227; border-radius: 8px;
+			padding: 28px 36px; text-align: center; box-sizing: border-box;
+			width: min(500px, calc(100vw - 48px));
+		}
+		.overlay h1 { margin: 0 0 12px; font-size: 30px; color: #f6d21f; }
+		.overlay h1.red { color: #ff5555; }
+		.overlay p { margin: 6px 0; font-size: 15px; line-height: 1.45; }
+		.overlay .sub { color: #aaa; font-size: 13px; }
+		.overlay .record { color: #3ef06c; font-weight: bold; font-size: 19px; }
+		.btn {
+			display: inline-block; margin: 10px 6px 0; padding: 10px 22px; font-size: 17px;
+			font-family: inherit; background: #1e8a5a; color: #fff; border: 2px solid #0d5c39;
+			border-radius: 6px; cursor: pointer; font-weight: bold;
+		}
+		.btn:hover { background: #27a56e; }
+		.btn.gray { background: #33404d; border-color: #202a33; }
+		.btn.gray:hover { background: #435463; }
+		a.plain { color: #9fd3ff; }
+	</style>
+</head>
+<body>
+	<div id="app"></div>
+	<div id="hud">
+		<div id="debuff"><img src="assets/spells/debuff_shadowOfDeath.jpg" alt=""><div class="timer">13</div></div>
+		<div id="objective"></div>
+		<div id="target-frame" class="panel">
+			<div id="tf-name">Deadly Construct 1</div>
+			<div id="tf-hpbar"><div id="tf-hpfill"></div></div>
+			<div id="tf-pct">100%</div>
+			<div id="tf-debuffs">
+				<span class="chip" id="tf-lance"><img src="assets/spells/spell_spiritLance.jpg" alt=""><span></span></span>
+				<span class="chip" id="tf-chains"><img src="assets/spells/spell_spiritChains.jpg" alt=""><span></span></span>
+			</div>
+		</div>
+		<div id="ability-bar" class="panel"></div>
+		<div id="announce"></div>
+		<div id="error"></div>
+		<div id="sound-toggle" class="panel">🔊</div>
+
+		<div id="start-overlay" class="overlay panel">
+			<div class="box">
+				<h1>Teron 3D</h1>
+				<p>Same fight, third dimension. Run away from Teron before the timer ends
+				— the constructs spawn where you die and crawl back to him.</p>
+				<p class="sub">Keybinds and options are shared with the 2D game (rebind there).
+				Tab targets nearest &middot; Shift-Tab furthest &middot; Esc pauses &middot; wheel zooms.</p>
+				<div>
+					<button class="btn" id="btn-start">START</button>
+					<button class="btn gray" id="btn-practice">PRACTICE</button>
+				</div>
+				<p id="best-line" class="sub"></p>
+				<p><a class="plain" href="index.html">&larr; Back to 2D</a></p>
+			</div>
+		</div>
+
+		<div id="pause-overlay" class="overlay panel">
+			<div class="box">
+				<h1>PAUSED</h1>
+				<div>
+					<button class="btn" id="btn-resume">Resume</button>
+					<button class="btn gray" id="btn-p-restart">Restart</button>
+				</div>
+				<p><a class="plain" href="index.html">&larr; Back to 2D</a></p>
+				<p class="sub">Esc to resume</p>
+			</div>
+		</div>
+
+		<div id="end-overlay" class="overlay panel">
+			<div class="box">
+				<h1 id="end-title">Teron Gorefiend dies!</h1>
+				<p id="end-time"></p>
+				<p id="end-best" class="sub"></p>
+				<p id="end-record" class="record">NEW RECORD!</p>
+				<div>
+					<button class="btn" id="btn-retry">Restart</button>
+					<button class="btn gray" id="btn-menu3d">3D Menu</button>
+				</div>
+				<p><a class="plain" href="index.html">&larr; Back to 2D</a></p>
+				<p class="sub">Press R to restart</p>
+			</div>
+		</div>
+	</div>
+	<script type="module" src="src/three/game3d.js"></script>
+</body>
+</html>

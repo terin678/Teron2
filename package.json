@@ -1,0 +1,10 @@
+{
+  "name": "teron2",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Improved remake of Faldorn's Teron Gorefiend construct-phase trainer",
+  "scripts": {
+    "test": "node --test tests/"
+  }
+}
