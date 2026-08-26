@@ -62,12 +62,18 @@ class AudioBank {
 		this.sounds.ambience.loop = true;
 		this.muted = false;
 	}
-	play(key) {
+	// delaySec matches the original's Phaser `play({ delay })` timings.
+	play(key, delaySec = 0) {
 		if (this.muted) return;
 		const a = this.sounds[key];
 		if (!a) return;
-		a.currentTime = 0;
-		a.play().catch(() => {});
+		const start = () => {
+			if (this.muted) return;
+			a.currentTime = 0;
+			a.play().catch(() => {});
+		};
+		if (delaySec > 0) setTimeout(start, delaySec * 1000);
+		else start();
 	}
 	isPlaying(key) {
 		const a = this.sounds[key];
@@ -197,7 +203,8 @@ class Game3D {
 			sprite.center.set(0.5, 0.15);
 			sprite.visible = false;
 			this.scene.add(sprite);
-			const freezeRing = this.makeRing(15, 0x29a4fb, 0.9);
+			// 4 segments renders as a diamond, matching the 2D indicator.
+			const freezeRing = this.makeRing(15, 0x29a4fb, 0.9, 4);
 			freezeRing.visible = false;
 			this.scene.add(freezeRing);
 			return {
@@ -224,9 +231,9 @@ class Game3D {
 		this.scheduled = [];   // {at, fn}
 	}
 
-	makeRing(radius, color, opacity) {
+	makeRing(radius, color, opacity, segments = 32) {
 		const ring = new THREE.Mesh(
-			new THREE.RingGeometry(radius - 2, radius, 32),
+			new THREE.RingGeometry(radius - 2, radius, segments),
 			new THREE.MeshBasicMaterial({ color, opacity, transparent: true, side: THREE.DoubleSide })
 		);
 		ring.rotation.x = -Math.PI / 2;
@@ -493,7 +500,7 @@ class Game3D {
 		this.setTarget(null);
 
 		this.audio.startLoops();
-		this.audio.play('aggro');
+		this.audio.play('aggro', 0.3);
 	}
 
 	toMenu() {
@@ -798,13 +805,15 @@ class Game3D {
 	winGame() {
 		this.state = 'won';
 		const seconds = (this.simTime - this.ghostSpawnAt) / 1000;
-		setTimeout(() => this.audio.play('teronDeath'), 1300);
+		this.audio.play('teronDeath', 1.3);
 		this.hideObjective();
 		this.setTarget(null);
 
 		// You defend Teron from the constructs; you don't kill him.
 		$('end-title').textContent = 'All constructs defeated!';
 		$('end-title').className = 'win';
+		$('btn-retry').textContent = 'Play Again';
+		$('end-hint').textContent = 'Press R to play again';
 		$('end-flavour').textContent = 'Your raid members cheer at you! You saved their day!';
 		$('end-flavour').style.display = 'block';
 
@@ -829,12 +838,14 @@ class Game3D {
 
 	loseGame() {
 		this.state = 'lost';
-		this.audio.play('enrage');
+		this.audio.play('enrage', 0.75);
 		this.hideObjective();
 		this.setTarget(null);
 
 		$('end-title').textContent = 'Your raid leader audibly sighs...';
 		$('end-title').className = 'red';
+		$('btn-retry').textContent = 'Try Again';
+		$('end-hint').textContent = 'Press R to try again';
 		$('end-flavour').textContent = "Ok wipe it up. This isn't hard just.. ugh. Didn't you all " +
 			"practice this? Run back asap and let's hope you-know-who doesn't get Shadow of Death this time..";
 		$('end-flavour').style.display = 'block';

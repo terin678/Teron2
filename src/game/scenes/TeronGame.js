@@ -266,15 +266,22 @@ export class TeronGame extends Phaser.Scene {
 			return;
 		}
 		e.preventDefault();
+		if (action.startsWith('ability')) {
+			this.abilityBar.heldSlots.add(Number(action.slice(7)));
+		}
 		if (e.repeat) return;
 		this.runTriggerAction(action);
 	}
 
 	onKeyUp(e) {
-		// Clear held movement by bare code so a shift press/release mismatch can't stick keys.
+		// Clear held state by bare code so a shift press/release mismatch can't stick keys.
 		for (const action of Object.keys(this.held)) {
 			const binds = this.settings.binds[action] ?? [];
 			if (binds.some(b => b && bareCode(b) === e.code)) this.held[action] = false;
+		}
+		for (let slot = 0; slot < 5; slot++) {
+			const binds = this.settings.binds['ability' + slot] ?? [];
+			if (binds.some(b => b && bareCode(b) === e.code)) this.abilityBar.heldSlots.delete(slot);
 		}
 	}
 
@@ -344,7 +351,9 @@ export class TeronGame extends Phaser.Scene {
 		this.game.events.on(Phaser.Core.Events.HIDDEN, this.autoPauseHandler);
 
 		this.events.on(Phaser.Scenes.Events.RESUME, () => {
+			// Keys released during the pause never reached us, so drop all held state.
 			this.held = { moveUp: false, moveDown: false, moveLeft: false, moveRight: false };
+			this.abilityBar.heldSlots.clear();
 			this.sound.resumeAll();
 		});
 
@@ -684,6 +693,7 @@ export class TeronGame extends Phaser.Scene {
 		this.ghosts.forEach(g => g.setScale(g.scaleX * ghostScaleFactor));
 		this.freezeIndicators.forEach(d => d.setScale(ghostScaleFactor));
 		this.targetHighlight.setScale(ghostScaleFactor);
+		this.hoverHighlight.setScale(ghostScaleFactor);
 		this.ghostSpawnOffset = GHOST.spawnOffset * 1.6;
 
 		this.physics.add.collider(this.ghosts, this.ghosts);

@@ -92,6 +92,8 @@ export class AbilityBar extends Phaser.GameObjects.Container {
 		this.lastGcdAt = -Infinity;
 		this.nocooldowns = false;
 		this.gameEnded = false;
+		// Slots whose bound key is currently held down; maintained by the scene.
+		this.heldSlots = new Set();
 
 		// wired up by the scene after construction:
 		this.player = null;
@@ -139,7 +141,10 @@ export class AbilityBar extends Phaser.GameObjects.Container {
 			slot.icon.setTint(gcd || cdMs > 0 ? COOLING_TINT : READY_TINT);
 			slot.cooldownText.visible = cdMs > 0;
 			if (cdMs > 0) slot.cooldownText.setText(String(Math.ceil(cdMs / 1000)));
-			slot.frame.visible = this.now < slot.pressedUntil ||
+			// Lit for as long as the key is held (as the original did), plus a
+			// short flash so a quick tap still registers visually.
+			slot.frame.visible = this.heldSlots.has(slot.ability.slot) ||
+				this.now < slot.pressedUntil ||
 				(this.scene.input.activePointer.isDown && slot.mouseIsOver);
 		}
 	}
