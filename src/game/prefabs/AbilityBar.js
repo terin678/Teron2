@@ -94,6 +94,10 @@ export class AbilityBar extends Phaser.GameObjects.Container {
 		this.gameEnded = false;
 		// Slots whose bound key is currently held down; maintained by the scene.
 		this.heldSlots = new Set();
+		// An ability pressed during the global cooldown fires the moment it ends,
+		// the way WoW's spell queue does. Without it a press inside the 1s GCD is
+		// silently dropped, which reads as the button not working.
+		this.queuedSlot = null;
 
 		// wired up by the scene after construction:
 		this.player = null;
@@ -135,6 +139,14 @@ export class AbilityBar extends Phaser.GameObjects.Container {
 
 	update() {
 		if (!this.visible) return;
+
+		// Release a queued press the instant the global cooldown clears.
+		if (this.queuedSlot !== null && !this.isGCD()) {
+			const slot = this.queuedSlot;
+			this.queuedSlot = null;
+			if (!this.gameEnded) this.tryActivate(slot);
+		}
+
 		const gcd = this.isGCD();
 		for (const slot of this.slots) {
 			const cdMs = this.cooldownRemaining(slot);
@@ -212,7 +224,10 @@ export class AbilityBar extends Phaser.GameObjects.Container {
 		const ability = slot.ability;
 		this.showPressed(slotIndex);
 
-		if (this.isGCD()) return;
+		if (this.isGCD()) {
+			this.queuedSlot = slotIndex;
+			return;
+		}
 		if (this.cooldownRemaining(slot) > 0) {
 			this.feedback('Not ready yet');
 			return;

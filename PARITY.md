@@ -62,6 +62,7 @@ Last audited 2026-08-26.
 | = | Clicking a spell icon casts it | ✓ both |
 | = | Nova effect for Chains, projectile effect for Lance/Volley | ✓ particles | ~ 3D uses meshes, not particles |
 | + | "Out of range" / "No target" / "Not ready yet" feedback (original failed silently) | ✓ both |
+| + | Spell queue: a press during the 1s GCD fires when it clears, as WoW does. The original dropped it silently, which reads as the button not working | ✓ both |
 
 ## Targeting
 

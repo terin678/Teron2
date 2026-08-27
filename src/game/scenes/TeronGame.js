@@ -37,6 +37,15 @@ export class TeronGame extends Phaser.Scene {
 	}
 
 	create() {
+		// Phaser reuses the scene instance AND its event emitter across a restart,
+		// so listeners registered on a previous run are still attached. Left alone,
+		// a stale tutorial handler fires alongside the live one and rewrites the
+		// current step — which looks like "I pressed it and nothing happened".
+		// Only our own event names are cleared; Phaser's lifecycle events are not.
+		for (const evt of ['ability-cast', 'target-selected', 'ghosts-spawned', 'binds-changed']) {
+			this.events.off(evt);
+		}
+
 		this.settings = this.registry.get('settings');
 		this.gameEnded = false;
 		this.ghostsSpawned = false;
@@ -347,14 +356,25 @@ export class TeronGame extends Phaser.Scene {
 	// ------------------------------------------------------------- pause
 
 	initPauseHandling() {
+		// game.events outlives the scene entirely, so drop any handler left from a
+		// previous run before re-adding or restarts stack duplicate auto-pauses.
+		if (this.autoPauseHandler) {
+			this.game.events.off(Phaser.Core.Events.BLUR, this.autoPauseHandler);
+			this.game.events.off(Phaser.Core.Events.HIDDEN, this.autoPauseHandler);
+		}
 		this.autoPauseHandler = () => this.pauseGame();
 		this.game.events.on(Phaser.Core.Events.BLUR, this.autoPauseHandler);
 		this.game.events.on(Phaser.Core.Events.HIDDEN, this.autoPauseHandler);
+
+		// Scene lifecycle events also survive a restart, so wire these exactly once.
+		if (this.lifecycleWired) return;
+		this.lifecycleWired = true;
 
 		this.events.on(Phaser.Scenes.Events.RESUME, () => {
 			// Keys released during the pause never reached us, so drop all held state.
 			this.held = { moveUp: false, moveDown: false, moveLeft: false, moveRight: false };
 			this.abilityBar.heldSlots.clear();
+			this.abilityBar.queuedSlot = null;
 			this.sound.resumeAll();
 		});
 

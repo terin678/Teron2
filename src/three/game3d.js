@@ -476,6 +476,7 @@ class Game3D {
 		}
 		for (const s of this.slots) { s.lastCastAt = -1e9; s.pressedUntil = 0; }
 		this.lastGcdAt = -1e9;
+		this.queuedSlot = null;
 		this.cycler = new TabCycler();
 		this.target = null;
 		this.impacts = [];
@@ -579,7 +580,12 @@ class Game3D {
 		const ability = slot.ability;
 		slot.pressedUntil = this.simTime + 150;
 
-		if (this.isGCD()) return;
+		// Pressing during the global cooldown queues the cast for the moment it
+		// clears, the way WoW does — otherwise the press is silently dropped.
+		if (this.isGCD()) {
+			this.queuedSlot = slotIndex;
+			return;
+		}
 		if (this.cooldownRemaining(slot) > 0) { this.showError('Not ready yet'); return; }
 
 		if (ability.type === 'target') {
@@ -678,6 +684,13 @@ class Game3D {
 
 	simUpdate(dtSec) {
 		this.movePlayer(dtSec);
+
+		// Release a queued press the instant the global cooldown clears.
+		if (this.queuedSlot != null && !this.isGCD()) {
+			const slot = this.queuedSlot;
+			this.queuedSlot = null;
+			this.tryActivate(slot);
+		}
 
 		if (this.state === 'prep') {
 			if (this.simTime >= this.prepEndsAt) this.spawnGhosts();

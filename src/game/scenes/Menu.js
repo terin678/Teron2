@@ -133,25 +133,32 @@ export class Menu extends Phaser.Scene {
 	buildSpellbookPanel() {
 		const settings = this.registry.get('settings');
 		const panel = this.add.container(0, 0);
-		let y = 210;
+		// Rows are measured rather than stepped by a fixed height: the ability
+		// descriptions wrap to different line counts, and a fixed step pushed the
+		// footer down underneath the menu buttons.
+		let y = 196;
 		for (const ability of ABILITIES) {
-			const icon = this.add.image(70, y + 20, ability.icon).setScale(0.8);
+			const icon = this.add.image(70, y + 18, ability.icon).setScale(0.75);
 			const bind = settings.binds['ability' + ability.slot];
 			const name = this.add.text(105, y, ability.name + '  [' + bindLabel(bind?.[0]) + ']', {
-				color: '#f6d21f', fontSize: '17px', fontStyle: 'bold',
+				color: '#f6d21f', fontSize: fs(this, 16), fontStyle: 'bold',
 			});
-			const desc = this.add.text(105, y + 22, ability.desc, {
-				color: '#dddddd', fontSize: '13px', wordWrap: { width: 430 },
+			const desc = this.add.text(105, y + 20, ability.desc, {
+				color: '#dddddd', fontSize: fs(this, 12.5), wordWrap: { width: 430 },
 			});
 			panel.add([icon, name, desc]);
-			y += 74;
+			y = Math.max(desc.getBounds().bottom, icon.getBounds().bottom) + 10;
 		}
-		panel.add(this.add.text(105, y + 4,
+		const footer = this.add.text(105, y + 4,
 			'Tab: target nearest, then cycle outward. Shift-Tab: reverse.\n' +
 			'Mouseover casting: Strike/Lance hit the hovered construct.\n' +
 			'Esc: pause. All keys rebindable in Options.', {
-			color: '#9fd3ff', fontSize: '13px', wordWrap: { width: 460 },
-		}));
+			color: '#9fd3ff', fontSize: fs(this, 12.5), wordWrap: { width: 460 },
+		});
+		// Never let the footer run under the button row at y=655.
+		const overhang = footer.getBounds().bottom - 636;
+		if (overhang > 0) footer.y -= overhang;
+		panel.add(footer);
 		return panel;
 	}
 
