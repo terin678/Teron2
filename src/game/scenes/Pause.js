@@ -45,6 +45,9 @@ export class Pause extends Phaser.Scene {
 			}
 		});
 
+		// Same as elsewhere: the scene emitter outlives a stop/launch cycle, so
+		// drop our previous handler before adding a fresh one.
+		this.events.off('options-closed');
 		this.events.on('options-closed', () => {
 			this.scene.get('TeronGame')?.events.emit('binds-changed');
 		});

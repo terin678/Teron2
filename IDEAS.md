@@ -276,7 +276,45 @@ clicks that can't be automated, so it's a create-and-push then hand-off.
 
 ---
 
-## 5. Other ideas from the build
+## 5. Hazard: listeners and sounds outlive a scene restart
+
+**Status:** three instances found and fixed 2026-08-27. Documented because the pattern will
+recur — nothing in the type system or the test suite catches it.
+
+**The trap:** Phaser reuses the scene *instance* and its event emitter across `scene.restart()` /
+`scene.start()`. Anything registered in `create()` is therefore still attached the next time
+`create()` runs, and fires twice. The same is true of the game-level managers (`game.events`,
+`game.sound`), which outlive scenes entirely.
+
+**How it showed up:** a tutorial gate appeared stuck — the player pressed the ability, its cooldown
+visibly started, but the on-screen step never advanced. A stale handler from a previous run was
+firing alongside the live one and rewriting the current step's text.
+
+**Found by counting listeners across repeated cycles** (menu → game → menu, and
+pause → options → resume), which is the only reliable way to see it:
+
+| Emitter | Before | After |
+|---|---|---|
+| `TeronGame` → `ability-cast` | 1, 2, 3 … | 1 |
+| `Menu` → `options-closed` | 1, 2, 3, 4 … | 1 |
+| `Pause` → `options-closed` | 1, 2, 3 … | 1 |
+| `game.sound` → `teron_Intro` instances | 5, 6, 7, 8, 9 … | 1 |
+
+**The rules this codebase follows now:**
+- Clear our *own* custom scene events at the top of `create()` (`this.events.off('name')`).
+  Never blanket-clear Phaser's lifecycle events — plugins listen on those.
+- Wire scene lifecycle handlers (`RESUME`, `SHUTDOWN`) exactly once, behind a flag.
+- For `game.events`, keep the handler reference and `off` before `on`.
+- For `game.sound`, `removeByKey` before `add`, since sounds belong to the game, not the scene.
+- GameObject listeners (`icon.on('pointerdown')`) are safe — they die with the object.
+
+**Worth building:** a browser-level smoke test that runs these cycles and asserts the counters stay
+flat. The Node suite can't reach this because it needs a live Phaser scene. Related to the
+deterministic-sim refactor in section 2, which would make more of this testable.
+
+---
+
+## 6. Other ideas from the build
 
 - **Mobile/touch support for 3D mode.** The 2D game already reconfigures for mobile (bigger bar,
   scaled ghosts, tap-to-move, ghost-ghost colliders). 3D has no touch controls at all.

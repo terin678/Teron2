@@ -112,7 +112,10 @@ export class Menu extends Phaser.Scene {
 
 		this.startAudio();
 
-		// Refresh bind labels in the spellbook when Options closes
+		// Refresh bind labels in the spellbook when Options closes.
+		// The scene emitter survives a restart, so clear our own handler first or
+		// every return to the menu stacks another one (each rebuilding the panel).
+		this.events.off('options-closed');
 		this.events.on('options-closed', () => {
 			const wasVisible = this.spellbookPanel.visible;
 			this.spellbookPanel.destroy();
@@ -170,6 +173,9 @@ export class Menu extends Phaser.Scene {
 	startAudio() {
 		const begin = () => {
 			if (!this.introSpeech) {
+				// Sounds are owned by the game-level manager, not the scene, so the
+				// previous instance has to go or every visit to the menu leaks one.
+				this.sound.removeByKey('teron_Intro');
 				this.introSpeech = this.sound.add('teron_Intro');
 				this.introSpeech.play();
 			}
