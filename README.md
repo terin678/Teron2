@@ -96,5 +96,12 @@ flyctl deploy --remote-only --config fly.toml
 
 ## Credits
 
-- Original game and assets: Faldorn — teron.faldorn.net ([buy them a coffee](https://www.buymeacoffee.com/faldorn))
-- Graphics and sounds are property of Blizzard Entertainment.
+- Original game and assets: Faldorn — [teron.faldorn.net](https://teron.faldorn.net/terongame/),
+  source at [jconnop/teron](https://github.com/jconnop/teron) (MIT).
+- Graphics and sounds are property of Blizzard Entertainment. Not affiliated with or
+  endorsed by Blizzard.
+
+### Buy a coffee
+
+- [Faldorn](https://www.buymeacoffee.com/faldorn) — for the original game this is built on
+- [glorp](https://buymeacoffee.com/glorp) — for this remake
